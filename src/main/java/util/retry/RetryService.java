@@ -21,7 +21,6 @@ public class RetryService {
 
     public <T> Optional<T> retry(Callable<Optional<T>> task, RetryPolicy retryPolicy, Predicate<T> checker) {
         while (retryPolicy.makeAttempt()) {
-            System.err.println("Starting attempt: " + retryPolicy.getCurrentAttempt() + ".\n");
             try {
                 Optional<T> result = task.call();
                 if (result.isPresent() && checker.test(result.get())) {
@@ -31,7 +30,6 @@ public class RetryService {
                 e.printStackTrace();
             }
         }
-        System.err.println("All is gone!!!");
         return Optional.empty();
     }
 }
