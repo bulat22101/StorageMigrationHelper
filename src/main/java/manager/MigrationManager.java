@@ -1,17 +1,14 @@
 package manager;
 
 import connector.FaultyStorageConnector;
-import enity.MigrationVerdict;
+import enity.MigrationReport;
 import exception.MigrationException;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import util.retry.RetryService;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class MigrationManager {
     RetryService retryService;
@@ -20,7 +17,7 @@ public class MigrationManager {
         this.retryService = new RetryService();
     }
 
-    public MigrationVerdict proceedMigration(String sourceStorageUrl, String targetStorageUrl, boolean overwrite)
+    public MigrationReport proceedMigration(String sourceStorageUrl, String targetStorageUrl, boolean overwrite)
             throws MigrationException {
         FaultyStorageConnector sourceStorage = new FaultyStorageConnector(sourceStorageUrl);
         FaultyStorageConnector targetStorage = new FaultyStorageConnector(targetStorageUrl);
@@ -29,7 +26,7 @@ public class MigrationManager {
             migrateFile(sourceStorage, targetStorage, filename);
         }
         checkAllFilesMoved(sourceStorage, targetStorage);
-        return new MigrationVerdict(true, "Migration was successfully completed.");
+        return new MigrationReport(true, Collections.singletonList("Migration was successfully completed."));
     }
 
     public void migrateFile(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage, String filename)
