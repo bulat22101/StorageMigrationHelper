@@ -3,8 +3,8 @@ package manager;
 import connector.FaultyStorageConnector;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -34,19 +34,12 @@ public class MultiThreadedMigrationManager extends MigrationManager {
     }
 
     private long doAndCount(Collection<String> files, Function<String, Boolean> task) {
-        return files.stream()
-                .map(filename -> pool.submit(() -> task.apply(filename)))
-                .map(future -> {
-                            try {
-                                return Optional.of(future.get());
-                            } catch (Exception e) {
-                                return Optional.of(false);
-                            }
-                        }
-                )
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        long count = files.stream()
+                .map(filename -> CompletableFuture.supplyAsync(() -> task.apply(filename), pool))
+                .map(CompletableFuture::join)
                 .filter(Boolean::booleanValue)
                 .count();
+        pool.shutdown();
+        return count;
     }
 }
