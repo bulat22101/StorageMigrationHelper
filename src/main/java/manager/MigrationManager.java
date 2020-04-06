@@ -1,11 +1,14 @@
 package manager;
 
 import connector.FaultyStorageConnector;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import util.retry.RetryService;
 
 import java.util.*;
 
 public abstract class MigrationManager {
+    private static final Logger log = LogManager.getLogger(MigrationManager.class);
     private RetryService retryService;
 
     public MigrationManager() {
@@ -13,6 +16,7 @@ public abstract class MigrationManager {
     }
 
     public boolean proceedMigration(String sourceStorageUrl, String targetStorageUrl, boolean overwrite) {
+        log.info("eeeee");
         return proceedMigration(
                 new FaultyStorageConnector(sourceStorageUrl),
                 new FaultyStorageConnector(targetStorageUrl),
@@ -52,10 +56,17 @@ public abstract class MigrationManager {
 
     protected boolean copyFile(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
                                String filename, boolean overwrite) {
+        log.info("Starting coping file {}.", filename);
         Optional<byte[]> file = downloadFile(sourceStorage, filename);
-        return file.isPresent()
+        boolean verdict = file.isPresent()
                 && (!overwrite || deleteFile(targetStorage, filename))
                 && uploadFile(targetStorage, filename, file.get());
+        if (verdict) {
+            log.info("File {} was successfully copied.", filename);
+        } else {
+            log.error("Failed to copy file: {}.", filename);
+        }
+        return verdict;
     }
 
     private Optional<List<String>> getStorageFiles(FaultyStorageConnector storage) {
