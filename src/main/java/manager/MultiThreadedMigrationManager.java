@@ -15,7 +15,14 @@ public class MultiThreadedMigrationManager extends MigrationManager {
 
     public MultiThreadedMigrationManager() {
         super();
+    }
+
+    @Override
+    public boolean proceedMigration(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage, boolean overwrite) {
         pool = Executors.newFixedThreadPool(N_THREADS);
+        boolean result = super.proceedMigration(sourceStorage, targetStorage, overwrite);
+        pool.shutdownNow();
+        return result;
     }
 
     @Override
