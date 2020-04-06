@@ -22,7 +22,7 @@ public class FaultyStorageConnector {
     private ObjectMapper objectMapper;
 
     public FaultyStorageConnector(String baseUrl) {
-        this(baseUrl, 5000);
+        this(baseUrl, 1500);
     }
 
     public FaultyStorageConnector(String baseUrl, int timeoutMS) {
