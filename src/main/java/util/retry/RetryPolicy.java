@@ -12,7 +12,13 @@ public class RetryPolicy {
     }
 
     public boolean makeAttempt() {
-        return ++currentAttempt <= totalAttempts;
+        if (++currentAttempt > 1) {
+            try {
+                Thread.sleep(timeoutMS);
+            } catch (Exception ignored) {
+            }
+        }
+        return currentAttempt <= totalAttempts;
     }
 
     public int getCurrentAttempt() {

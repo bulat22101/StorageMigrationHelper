@@ -22,15 +22,25 @@ public class FaultyStorageConnector {
     private ObjectMapper objectMapper;
 
     public FaultyStorageConnector(String baseUrl) {
+        this(baseUrl, 5000);
+    }
+
+    public FaultyStorageConnector(String baseUrl, int timeoutMS) {
+        this(baseUrl, HttpClientBuilder.create()
+                .setDefaultRequestConfig(
+                        RequestConfig.custom()
+                                .setConnectTimeout(timeoutMS)
+                                .setConnectionRequestTimeout(timeoutMS)
+                                .setSocketTimeout(timeoutMS)
+                                .build()
+                ).build()
+        );
+    }
+
+    public FaultyStorageConnector(String baseUrl, CloseableHttpClient httpClient) {
         this.baseUrl = baseUrl;
         this.objectMapper = new ObjectMapper();
-        int timeout = 20;
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(timeout * 1000)
-                .setConnectionRequestTimeout(timeout * 1000)
-                .setSocketTimeout(timeout * 1000).build();
-        this.httpClient =
-                HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+        this.httpClient = httpClient;
     }
 
     public String getBaseUrl() {
@@ -39,6 +49,7 @@ public class FaultyStorageConnector {
 
     public Optional<List<String>> getFileNamesList() {
         HttpUriRequest request = new HttpGet(baseUrl + "/files/");
+        request.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType());
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK
                     ? Optional.ofNullable(
@@ -74,7 +85,6 @@ public class FaultyStorageConnector {
 
     public boolean uploadFile(String filename, byte[] file) {
         HttpPost request = new HttpPost(baseUrl + "/files");
-        System.err.println(filename);
         HttpEntity entity = MultipartEntityBuilder.create()
                 .addBinaryBody("file", file, ContentType.MULTIPART_FORM_DATA, filename)
                 .build();

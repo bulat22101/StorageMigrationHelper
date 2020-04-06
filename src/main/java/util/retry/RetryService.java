@@ -7,11 +7,11 @@ import java.util.function.Predicate;
 public class RetryService {
 
     public <T> Optional<T> retry(Callable<Optional<T>> task) {
-        return retry(task, new RetryPolicy(20, 1000));
+        return retry(task, value -> true);
     }
 
     public <T> Optional<T> retry(Callable<Optional<T>> task, Predicate<T> checker) {
-        return retry(task, new RetryPolicy(20, 1000), checker);
+        return retry(task, new RetryPolicy(5, 1000), checker);
     }
 
     public <T> Optional<T> retry(Callable<Optional<T>> task, RetryPolicy retryPolicy) {
