@@ -34,12 +34,10 @@ public class MultiThreadedMigrationManager extends MigrationManager {
     }
 
     private long doAndCount(Collection<String> files, Function<String, Boolean> task) {
-        long count = files.stream()
+        return files.stream()
                 .map(filename -> CompletableFuture.supplyAsync(() -> task.apply(filename), pool))
                 .map(CompletableFuture::join)
                 .filter(Boolean::booleanValue)
                 .count();
-        pool.shutdown();
-        return count;
     }
 }
