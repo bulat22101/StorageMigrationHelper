@@ -11,7 +11,7 @@ public class RetryService {
     }
 
     public <T> Optional<T> retry(Callable<Optional<T>> task, Predicate<T> checker) {
-        return retry(task, new RetryPolicy(5, 1000), checker);
+        return retry(task, new RetryPolicy(20, 0), checker);
     }
 
     public <T> Optional<T> retry(Callable<Optional<T>> task, RetryPolicy retryPolicy) {

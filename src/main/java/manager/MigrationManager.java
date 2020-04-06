@@ -5,16 +5,22 @@ import util.retry.RetryService;
 
 import java.util.*;
 
-public class MigrationManager {
-    RetryService retryService;
+public abstract class MigrationManager {
+    private RetryService retryService;
 
     public MigrationManager() {
         this.retryService = new RetryService();
     }
 
     public boolean proceedMigration(String sourceStorageUrl, String targetStorageUrl, boolean overwrite) {
-        FaultyStorageConnector sourceStorage = new FaultyStorageConnector(sourceStorageUrl);
-        FaultyStorageConnector targetStorage = new FaultyStorageConnector(targetStorageUrl);
+        return proceedMigration(
+                new FaultyStorageConnector(sourceStorageUrl),
+                new FaultyStorageConnector(targetStorageUrl),
+                overwrite
+        );
+    }
+
+    public boolean proceedMigration(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage, boolean overwrite) {
         Optional<List<String>> sourceStorageFiles = getStorageFiles(sourceStorage);
         Optional<List<String>> targetStorageFiles = getStorageFiles(targetStorage);
         if (!sourceStorageFiles.isPresent() || !targetStorageFiles.isPresent()) {
@@ -34,33 +40,18 @@ public class MigrationManager {
                 && deleteAllFiles(sourceStorage, sourceStorageFiles.get());
     }
 
-    private boolean checkFiles(Collection<String> expectedFiles, FaultyStorageConnector storage){
+    private boolean checkFiles(Collection<String> expectedFiles, FaultyStorageConnector storage) {
         Optional<Set<String>> storageFiles = getStorageFiles(storage).map(HashSet::new);
         return storageFiles.isPresent() && storageFiles.get().containsAll(expectedFiles);
     }
 
-    private boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
-        System.err.println("START DELETION.");
-        boolean allFilesDeleted = true;
-        for (String filename : files) {
-            allFilesDeleted &= deleteFile(storage, filename);
-        }
-        return allFilesDeleted;
-    }
+    abstract protected  boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files);
 
-    private boolean copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
-                                 Collection<String> filesToCopy, Set<String> filesToOverwrite) {
-        System.err.println("START COPYING.");
-        boolean allFilesCopied = true;
-        for (String filename : filesToCopy) {
-            allFilesCopied &= copyFile(sourceStorage, targetStorage, filename, filesToOverwrite.contains(filename));
-        }
-        return allFilesCopied;
-    }
+    abstract protected boolean copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+                                            Collection<String> filesToCopy, Set<String> filesToOverwrite);
 
-    private boolean copyFile(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
-                             String filename, boolean overwrite) {
-        System.err.println(filename);
+    protected boolean copyFile(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+                               String filename, boolean overwrite) {
         Optional<byte[]> file = downloadFile(sourceStorage, filename);
         return file.isPresent()
                 && (!overwrite || deleteFile(targetStorage, filename))
@@ -71,8 +62,7 @@ public class MigrationManager {
         return retryService.retry(storage::getFileNamesList);
     }
 
-    private boolean deleteFile(FaultyStorageConnector storage, String filename) {
-        System.err.println(filename);
+    protected boolean deleteFile(FaultyStorageConnector storage, String filename) {
         return retryService.retry(() -> Optional.of(storage.deleteFile(filename)), value -> value).isPresent();
     }
 
