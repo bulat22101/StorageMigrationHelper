@@ -2,7 +2,8 @@ import manager.MigrationManager;
 import manager.MultiThreadedMigrationManager;
 import manager.SingleThreadedMigrationManager;
 
-import java.io.Console;
+import java.io.PrintWriter;
+import java.util.Scanner;
 
 public class Main {
     private static final String DEFAULT_URL = "http://localhost:8080";
@@ -10,19 +11,20 @@ public class Main {
     private static final String TARGET_STORAGE_URL_SUFFIX = "/newStorage";
 
     public static void main(String[] args) {
-        Console console = System.console();
-        console.printf("Please enter source storage url. Default: %s.\n", DEFAULT_URL);
-        console.flush();
-        String readSourceStorageUrl = console.readLine();
-        console.printf("Please enter target storage url. Default: %s.\n", DEFAULT_URL);
-        console.flush();
-        String readTargetStorageUrl = console.readLine();
-        console.printf("Overwrite files that are already in target storage? (y, n) Default: n.\n");
-        console.flush();
-        String readOverwrite = console.readLine();
-        console.readLine("Multithreaded? (y, n) Default: y.");
-        console.flush();
-        String readMultithreaded = console.readLine();
+        Scanner input = new Scanner(System.in);
+        PrintWriter output = new PrintWriter(System.out);
+        output.printf("Please enter source storage url. Default: %s.\n", DEFAULT_URL);
+        output.flush();
+        String readSourceStorageUrl = input.nextLine();
+        output.printf("Please enter target storage url. Default: %s.\n", DEFAULT_URL);
+        output.flush();
+        String readTargetStorageUrl = input.nextLine();
+        output.println("Overwrite files that are already in target storage? (y, n) Default: n.");
+        output.flush();
+        String readOverwrite = input.nextLine();
+        output.println("Multithreaded? (y, n) Default: y.");
+        output.flush();
+        String readMultithreaded = input.nextLine();
         String sourceStorageUrl = (readSourceStorageUrl.isEmpty() ? DEFAULT_URL : readSourceStorageUrl)
                 + SOURCE_STORAGE_URL_SUFFIX;
         String targetStorageUrl = (readTargetStorageUrl.isEmpty() ? DEFAULT_URL : readTargetStorageUrl)
@@ -35,6 +37,8 @@ public class Main {
         String result = migrationManager.proceedMigration(sourceStorageUrl, targetStorageUrl, overwrite)
                 ? "done"
                 : "failed";
-        console.printf("Migration %s.", result);
+        output.printf("Migration %s.", result);
+        output.close();
+        input.close();
     }
 }
