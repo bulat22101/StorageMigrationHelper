@@ -45,7 +45,7 @@ public abstract class MigrationManager {
         return storageFiles.isPresent() && storageFiles.get().containsAll(expectedFiles);
     }
 
-    abstract protected  boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files);
+    abstract protected boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files);
 
     abstract protected boolean copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
                                             Collection<String> filesToCopy, Set<String> filesToOverwrite);

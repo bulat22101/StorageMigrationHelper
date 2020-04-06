@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class SingleThreadedMigrationManager extends MigrationManager {
 
-    protected  boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
+    protected boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
         boolean allFilesDeleted = true;
         for (String filename : files) {
             allFilesDeleted &= deleteFile(storage, filename);
@@ -16,7 +16,7 @@ public class SingleThreadedMigrationManager extends MigrationManager {
     }
 
     protected boolean copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
-                                 Collection<String> filesToCopy, Set<String> filesToOverwrite) {
+                                   Collection<String> filesToCopy, Set<String> filesToOverwrite) {
         boolean allFilesCopied = true;
         for (String filename : filesToCopy) {
             allFilesCopied &= copyFile(sourceStorage, targetStorage, filename, filesToOverwrite.contains(filename));

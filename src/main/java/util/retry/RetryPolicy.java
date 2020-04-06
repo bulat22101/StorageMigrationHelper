@@ -12,7 +12,8 @@ public class RetryPolicy {
     }
 
     public boolean makeAttempt() {
-        if (++currentAttempt > 1) {
+        ++currentAttempt;
+        if (timeoutMS > 0 && currentAttempt > 1) {
             try {
                 Thread.sleep(timeoutMS);
             } catch (Exception ignored) {
