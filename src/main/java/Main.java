@@ -22,9 +22,9 @@ public class Main {
         output.println("Overwrite files that are already in target storage? (y, n) Default: n.");
         output.flush();
         String readOverwrite = input.nextLine();
-        output.println("Multithreaded? (y, n) Default: n.");
-        String readMultithreaded = input.nextLine();
+        output.println("Multithreaded? (y, n) Default: y.");
         output.flush();
+        String readMultithreaded = input.nextLine();
         String sourceStorageUrl = (readSourceStorageUrl.isEmpty() ? DEFAULT_URL : readSourceStorageUrl)
                 + SOURCE_STORAGE_URL_SUFFIX;
         String targetStorageUrl = (readTargetStorageUrl.isEmpty() ? DEFAULT_URL : readTargetStorageUrl)
