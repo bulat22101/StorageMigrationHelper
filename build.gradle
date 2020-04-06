@@ -1,7 +1,7 @@
 plugins {
     id 'java'
+    id 'application'
 }
-
 version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
@@ -9,6 +9,11 @@ sourceCompatibility = 1.8
 repositories {
     mavenCentral()
 }
+
+application {
+    mainClassName = 'Main'
+}
+
 
 dependencies {
     compile 'org.apache.httpcomponents:httpclient:4.5.12'
