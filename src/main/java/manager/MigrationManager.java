@@ -74,7 +74,7 @@ public abstract class MigrationManager {
 
     private boolean proceedDeletion(HttpStorageConnector storage, Collection<String> filesToDelete) {
         log.debug(
-                "Starting copying {} files from storage({}).",
+                "Starting deleting {} files from storage({}).",
                 filesToDelete.size(),
                 storage.getBaseUrl()
         );
@@ -112,7 +112,7 @@ public abstract class MigrationManager {
 
     protected boolean copyFile(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage,
                                String filename, boolean overwrite) {
-        log.debug("Starting copy file {}.", filename);
+        log.debug("Starting copying file {}.", filename);
         Optional<byte[]> file = downloadFile(sourceStorage, filename);
         boolean verdict = file.isPresent()
                 && (!overwrite || deleteFile(targetStorage, filename))
@@ -126,7 +126,14 @@ public abstract class MigrationManager {
     }
 
     private Optional<List<String>> getStorageFiles(HttpStorageConnector storage) {
-        return retryService.retry(storage::getFileNamesList);
+        log.debug("Getting storage({}) file list.", storage.getBaseUrl());
+        Optional<List<String>> result = retryService.retry(storage::getFileNamesList);
+        if (result.isPresent()) {
+            log.debug("Successfully got storage({}) file list.", storage.getBaseUrl());
+        } else {
+            log.error("Error occurred while getting storage({}) file list.", storage.getBaseUrl());
+        }
+        return result;
     }
 
     protected boolean deleteFile(HttpStorageConnector storage, String filename) {
