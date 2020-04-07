@@ -1,6 +1,6 @@
 package manager;
 
-import connector.FaultyStorageConnector;
+import connector.HttpStorageConnector;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,8 +10,8 @@ import java.util.*;
 
 public class MigrationManagerTest {
     private static final int SOURCE_STORAGE_SIZE = 5000;
-    private FaultyStorageConnector sourceStorage;
-    private FaultyStorageConnector targetStorage;
+    private HttpStorageConnector sourceStorage;
+    private HttpStorageConnector targetStorage;
     private Map<String, File> sourceStorageMap;
     private Map<String, File> targetStorageMap;
     private Map<String, File> expectedStorageMap;
@@ -36,26 +36,26 @@ public class MigrationManagerTest {
     }
 
     @Test
-    public void testSingleThreadOverwrite(){
+    public void testSingleThreadOverwrite() {
         testOverwrite(new SingleThreadedMigrationManager());
     }
 
     @Test
-    public void testMultiThreadOverwrite(){
+    public void testMultiThreadOverwrite() {
         testOverwrite(new MultiThreadedMigrationManager());
     }
 
     @Test
-    public void testSingleThreadNotOverwrite(){
+    public void testSingleThreadNotOverwrite() {
         testNotOverwrite(new SingleThreadedMigrationManager());
     }
 
     @Test
-    public void testMultiThreadNotOverwrite(){
+    public void testMultiThreadNotOverwrite() {
         testNotOverwrite(new MultiThreadedMigrationManager());
     }
 
-    private void testOverwrite(MigrationManager migrationManager){
+    private void testOverwrite(MigrationManager migrationManager) {
         test(migrationManager, true);
         Mockito.verify(sourceStorage, Mockito.times(SOURCE_STORAGE_SIZE)).downloadFile(Mockito.anyString());
         Mockito.verify(targetStorage, Mockito.times((SOURCE_STORAGE_SIZE + 99) / 100)).deleteFile(Mockito.anyString());
@@ -65,7 +65,7 @@ public class MigrationManagerTest {
 
     }
 
-    private void testNotOverwrite(MigrationManager migrationManager){
+    private void testNotOverwrite(MigrationManager migrationManager) {
         test(migrationManager, false);
         Mockito.verify(sourceStorage, Mockito.times(SOURCE_STORAGE_SIZE - (SOURCE_STORAGE_SIZE + 99) / 100)).downloadFile(Mockito.anyString());
         Mockito.verify(targetStorage, Mockito.times(0)).deleteFile(Mockito.anyString());
@@ -84,9 +84,9 @@ public class MigrationManagerTest {
         Mockito.verify(sourceStorage, Mockito.times(1)).getFileNamesList();
     }
 
-    private boolean checkTargetMapFiles(){
+    private boolean checkTargetMapFiles() {
         boolean result = true;
-        for(Map.Entry<String, File> entry: expectedStorageMap.entrySet()){
+        for (Map.Entry<String, File> entry : expectedStorageMap.entrySet()) {
             result &= targetStorageMap.containsKey(entry.getKey())
                     && entry.getValue().equals(targetStorageMap.get(entry.getKey()));
         }
@@ -99,20 +99,16 @@ public class MigrationManagerTest {
         return new File(data);
     }
 
-    /**
-     * Sorry.
-     **/
-    private class FakeStorage extends FaultyStorageConnector {
+    private class FakeStorage implements HttpStorageConnector {
         Map<String, File> map;
 
         public FakeStorage(Map<String, File> map) {
-            super("");
             this.map = map;
         }
 
         @Override
         public String getBaseUrl() {
-            return super.getBaseUrl();
+            return "fake-storage.url";
         }
 
         @Override
