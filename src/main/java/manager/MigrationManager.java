@@ -8,7 +8,7 @@ import util.retry.RetryService;
 import java.util.*;
 
 public abstract class MigrationManager {
-    private static final Logger log = LogManager.getLogger(MigrationManager.class);
+    protected static final Logger log = LogManager.getLogger();
     private RetryService retryService;
 
     public MigrationManager() {
@@ -16,7 +16,6 @@ public abstract class MigrationManager {
     }
 
     public boolean proceedMigration(String sourceStorageUrl, String targetStorageUrl, boolean overwrite) {
-        log.info("eeeee");
         return proceedMigration(
                 new FaultyStorageConnector(sourceStorageUrl),
                 new FaultyStorageConnector(targetStorageUrl),
@@ -25,9 +24,12 @@ public abstract class MigrationManager {
     }
 
     public boolean proceedMigration(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage, boolean overwrite) {
+        log.debug("Starting migration.");
+        log.debug("Getting file lists from storages.");
         Optional<List<String>> sourceStorageFiles = getStorageFiles(sourceStorage);
         Optional<List<String>> targetStorageFiles = getStorageFiles(targetStorage);
         if (!sourceStorageFiles.isPresent() || !targetStorageFiles.isPresent()) {
+            log.debug("Failed to get files lists. Stopping migration.");
             return false;
         }
         Set<String> filesToMove = new HashSet<>(sourceStorageFiles.get());
@@ -39,30 +41,83 @@ public abstract class MigrationManager {
             filesToOverwrite = Collections.emptySet();
             filesToMove.removeAll(new HashSet<>(targetStorageFiles.get()));
         }
-        return copyAllFiles(sourceStorage, targetStorage, filesToMove, filesToOverwrite)
+        boolean verdict = proceedCopying(sourceStorage, targetStorage, filesToMove, filesToOverwrite)
                 && checkFiles(sourceStorageFiles.get(), targetStorage)
-                && deleteAllFiles(sourceStorage, sourceStorageFiles.get());
+                && proceedDeletion(sourceStorage, sourceStorageFiles.get());
+        if (verdict) {
+            log.debug("Migration successfully completed.");
+        } else {
+            log.debug("Migration failed.");
+        }
+        return verdict;
+    }
+
+    private boolean proceedCopying(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+                                   Collection<String> filesToCopy, Set<String> filesToOverwrite) {
+        log.debug(
+                "Starting copying {} files from storage({}) to storage({}).",
+                filesToCopy.size(),
+                sourceStorage.getBaseUrl(),
+                targetStorage.getBaseUrl()
+        );
+        long copied = copyAllFiles(sourceStorage, targetStorage, filesToCopy, filesToOverwrite);
+        log.debug("Successfully copied {} files of {}.", copied, filesToCopy.size());
+        boolean verdict = copied == filesToCopy.size();
+        if (verdict) {
+            log.debug("All files copied.");
+        } else {
+            log.debug("Not all files copied. Skipping other steps.");
+        }
+        return verdict;
+    }
+
+    private boolean proceedDeletion(FaultyStorageConnector storage, Collection<String> filesToDelete) {
+        log.debug(
+                "Starting copying {} files from storage({}).",
+                filesToDelete.size(),
+                storage.getBaseUrl()
+        );
+        long deleted = deleteAllFiles(storage, filesToDelete);
+        log.debug("Successfully deleted {} files of {}.", deleted, filesToDelete.size());
+        boolean verdict = deleted == filesToDelete.size();
+        if (verdict) {
+            log.debug("All files deleted.");
+        } else {
+            log.debug("Not all files deleted.");
+        }
+        return verdict;
     }
 
     private boolean checkFiles(Collection<String> expectedFiles, FaultyStorageConnector storage) {
+        log.debug("Start checking file lists.");
         Optional<Set<String>> storageFiles = getStorageFiles(storage).map(HashSet::new);
-        return storageFiles.isPresent() && storageFiles.get().containsAll(expectedFiles);
+        boolean verdict = storageFiles.isPresent() && storageFiles.get().containsAll(expectedFiles);
+        if (verdict) {
+            log.debug("File lists check successfully passed.");
+        } else {
+            log.debug(
+                    storageFiles.isPresent()
+                            ? "Check proceeded, but not passed."
+                            : "Failed to proceed check."
+            );
+        }
+        return verdict;
     }
 
-    abstract protected boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files);
+    abstract protected long deleteAllFiles(FaultyStorageConnector storage, Collection<String> files);
 
-    abstract protected boolean copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
-                                            Collection<String> filesToCopy, Set<String> filesToOverwrite);
+    abstract protected long copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+                                         Collection<String> filesToCopy, Set<String> filesToOverwrite);
 
     protected boolean copyFile(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
                                String filename, boolean overwrite) {
-        log.info("Starting coping file {}.", filename);
+        log.debug("Starting copy file {}.", filename);
         Optional<byte[]> file = downloadFile(sourceStorage, filename);
         boolean verdict = file.isPresent()
                 && (!overwrite || deleteFile(targetStorage, filename))
                 && uploadFile(targetStorage, filename, file.get());
         if (verdict) {
-            log.info("File {} was successfully copied.", filename);
+            log.debug("File {} was successfully copied.", filename);
         } else {
             log.error("Failed to copy file: {}.", filename);
         }
@@ -74,7 +129,16 @@ public abstract class MigrationManager {
     }
 
     protected boolean deleteFile(FaultyStorageConnector storage, String filename) {
-        return retryService.retry(() -> Optional.of(storage.deleteFile(filename)), value -> value).isPresent();
+        log.debug("Starting deleting file {}.", filename);
+        boolean verdict = retryService
+                .retry(() -> Optional.of(storage.deleteFile(filename)), value -> value)
+                .isPresent();
+        if (verdict) {
+            log.debug("File {} was successfully deleted.", filename);
+        } else {
+            log.error("Failed to delete file: {}.", filename);
+        }
+        return verdict;
     }
 
     private Optional<byte[]> downloadFile(FaultyStorageConnector storage, String filename) {

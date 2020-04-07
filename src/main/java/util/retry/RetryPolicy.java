@@ -25,4 +25,8 @@ public class RetryPolicy {
     public int getCurrentAttempt() {
         return currentAttempt;
     }
+
+    public int getTotalAttempts() {
+        return totalAttempts;
+    }
 }
