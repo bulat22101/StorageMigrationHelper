@@ -16,7 +16,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import java.util.List;
 import java.util.Optional;
 
-public class FaultyStorageConnector {
+public class FaultyStorageConnector implements HttpStorageConnector {
     private CloseableHttpClient httpClient;
     private String baseUrl;
     private ObjectMapper objectMapper;

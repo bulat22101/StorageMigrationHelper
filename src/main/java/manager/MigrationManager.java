@@ -1,6 +1,7 @@
 package manager;
 
 import connector.FaultyStorageConnector;
+import connector.HttpStorageConnector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import util.retry.RetryService;
@@ -23,7 +24,7 @@ public abstract class MigrationManager {
         );
     }
 
-    public boolean proceedMigration(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage, boolean overwrite) {
+    public boolean proceedMigration(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage, boolean overwrite) {
         log.debug("Starting migration.");
         log.debug("Getting file lists from storages.");
         Optional<List<String>> sourceStorageFiles = getStorageFiles(sourceStorage);
@@ -52,7 +53,7 @@ public abstract class MigrationManager {
         return verdict;
     }
 
-    private boolean proceedCopying(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+    private boolean proceedCopying(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage,
                                    Collection<String> filesToCopy, Set<String> filesToOverwrite) {
         log.debug(
                 "Starting copying {} files from storage({}) to storage({}).",
@@ -71,7 +72,7 @@ public abstract class MigrationManager {
         return verdict;
     }
 
-    private boolean proceedDeletion(FaultyStorageConnector storage, Collection<String> filesToDelete) {
+    private boolean proceedDeletion(HttpStorageConnector storage, Collection<String> filesToDelete) {
         log.debug(
                 "Starting copying {} files from storage({}).",
                 filesToDelete.size(),
@@ -88,7 +89,7 @@ public abstract class MigrationManager {
         return verdict;
     }
 
-    private boolean checkFiles(Collection<String> expectedFiles, FaultyStorageConnector storage) {
+    private boolean checkFiles(Collection<String> expectedFiles, HttpStorageConnector storage) {
         log.debug("Start checking file lists.");
         Optional<Set<String>> storageFiles = getStorageFiles(storage).map(HashSet::new);
         boolean verdict = storageFiles.isPresent() && storageFiles.get().containsAll(expectedFiles);
@@ -104,12 +105,12 @@ public abstract class MigrationManager {
         return verdict;
     }
 
-    abstract protected long deleteAllFiles(FaultyStorageConnector storage, Collection<String> files);
+    abstract protected long deleteAllFiles(HttpStorageConnector storage, Collection<String> files);
 
-    abstract protected long copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+    abstract protected long copyAllFiles(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage,
                                          Collection<String> filesToCopy, Set<String> filesToOverwrite);
 
-    protected boolean copyFile(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+    protected boolean copyFile(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage,
                                String filename, boolean overwrite) {
         log.debug("Starting copy file {}.", filename);
         Optional<byte[]> file = downloadFile(sourceStorage, filename);
@@ -124,11 +125,11 @@ public abstract class MigrationManager {
         return verdict;
     }
 
-    private Optional<List<String>> getStorageFiles(FaultyStorageConnector storage) {
+    private Optional<List<String>> getStorageFiles(HttpStorageConnector storage) {
         return retryService.retry(storage::getFileNamesList);
     }
 
-    protected boolean deleteFile(FaultyStorageConnector storage, String filename) {
+    protected boolean deleteFile(HttpStorageConnector storage, String filename) {
         log.debug("Starting deleting file {}.", filename);
         boolean verdict = retryService
                 .retry(() -> Optional.of(storage.deleteFile(filename)), value -> value)
@@ -141,11 +142,26 @@ public abstract class MigrationManager {
         return verdict;
     }
 
-    private Optional<byte[]> downloadFile(FaultyStorageConnector storage, String filename) {
-        return retryService.retry(() -> storage.downloadFile(filename));
+    private Optional<byte[]> downloadFile(HttpStorageConnector storage, String filename) {
+        log.debug("Starting downloading file {}.", filename);
+        Optional<byte[]> result = retryService.retry(() -> storage.downloadFile(filename));
+        if (result.isPresent()) {
+            log.debug("File {} was successfully downloaded.", filename);
+        } else {
+            log.error("Failed to download file: {}.", filename);
+        }
+        return result;
     }
 
-    private boolean uploadFile(FaultyStorageConnector storage, String filename, byte[] file) {
-        return retryService.retry(() -> Optional.of(storage.uploadFile(filename, file)), value -> value).isPresent();
+    private boolean uploadFile(HttpStorageConnector storage, String filename, byte[] file) {
+        log.debug("Starting uploading file {}.", filename);
+        boolean verdict = retryService.retry(() -> Optional.of(storage.uploadFile(filename, file)), value -> value)
+                .isPresent();
+        if (verdict) {
+            log.debug("File {} was successfully uploaded.", filename);
+        } else {
+            log.error("Failed to upload file: {}.", filename);
+        }
+        return verdict;
     }
 }
