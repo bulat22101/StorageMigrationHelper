@@ -143,10 +143,25 @@ public abstract class MigrationManager {
     }
 
     private Optional<byte[]> downloadFile(HttpStorageConnector storage, String filename) {
-        return retryService.retry(() -> storage.downloadFile(filename));
+        log.debug("Starting downloading file {}.", filename);
+        Optional<byte[]> result = retryService.retry(() -> storage.downloadFile(filename));
+        if (result.isPresent()) {
+            log.debug("File {} was successfully downloaded.", filename);
+        } else {
+            log.error("Failed to download file: {}.", filename);
+        }
+        return result;
     }
 
     private boolean uploadFile(HttpStorageConnector storage, String filename, byte[] file) {
-        return retryService.retry(() -> Optional.of(storage.uploadFile(filename, file)), value -> value).isPresent();
+        log.debug("Starting uploading file {}.", filename);
+        boolean verdict = retryService.retry(() -> Optional.of(storage.uploadFile(filename, file)), value -> value)
+                .isPresent();
+        if (verdict) {
+            log.debug("File {} was successfully uploaded.", filename);
+        } else {
+            log.error("Failed to upload file: {}.", filename);
+        }
+        return verdict;
     }
 }
