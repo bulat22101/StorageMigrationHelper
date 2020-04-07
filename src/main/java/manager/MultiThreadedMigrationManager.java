@@ -26,18 +26,17 @@ public class MultiThreadedMigrationManager extends MigrationManager {
     }
 
     @Override
-    protected boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
-        return files.size() == doAndCount(files, fileName -> deleteFile(storage, fileName));
+    protected long deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
+        return doAndCount(files, fileName -> deleteFile(storage, fileName));
     }
 
     @Override
-    protected boolean copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
-                                   Collection<String> filesToCopy, Set<String> filesToOverwrite) {
-        long copied = doAndCount(
+    protected long copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+                                Collection<String> filesToCopy, Set<String> filesToOverwrite) {
+        return doAndCount(
                 filesToCopy,
                 fileName -> copyFile(sourceStorage, targetStorage, fileName, filesToOverwrite.contains(fileName))
         );
-        return copied == filesToCopy.size();
     }
 
     private long doAndCount(Collection<String> files, Function<String, Boolean> task) {

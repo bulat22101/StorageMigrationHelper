@@ -7,20 +7,25 @@ import java.util.Set;
 
 public class SingleThreadedMigrationManager extends MigrationManager {
 
-    protected boolean deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
-        boolean allFilesDeleted = true;
-        for (String filename : files) {
-            allFilesDeleted &= deleteFile(storage, filename);
-        }
-        return allFilesDeleted;
+    protected long deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
+        return files.stream()
+                .map(filename -> deleteFile(storage, filename))
+                .filter(Boolean::booleanValue)
+                .count();
     }
 
-    protected boolean copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
-                                   Collection<String> filesToCopy, Set<String> filesToOverwrite) {
-        boolean allFilesCopied = true;
-        for (String filename : filesToCopy) {
-            allFilesCopied &= copyFile(sourceStorage, targetStorage, filename, filesToOverwrite.contains(filename));
-        }
-        return allFilesCopied;
+    protected long copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+                                Collection<String> filesToCopy, Set<String> filesToOverwrite) {
+        return filesToCopy.stream()
+                .map(
+                        filename -> copyFile(
+                                sourceStorage,
+                                targetStorage,
+                                filename,
+                                filesToOverwrite.contains(filename)
+                        )
+                )
+                .filter(Boolean::booleanValue)
+                .count();
     }
 }
