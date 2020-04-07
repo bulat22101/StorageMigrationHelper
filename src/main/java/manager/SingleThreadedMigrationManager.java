@@ -1,20 +1,20 @@
 package manager;
 
-import connector.FaultyStorageConnector;
+import connector.HttpStorageConnector;
 
 import java.util.Collection;
 import java.util.Set;
 
 public class SingleThreadedMigrationManager extends MigrationManager {
 
-    protected long deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
+    protected long deleteAllFiles(HttpStorageConnector storage, Collection<String> files) {
         return files.stream()
                 .map(filename -> deleteFile(storage, filename))
                 .filter(Boolean::booleanValue)
                 .count();
     }
 
-    protected long copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+    protected long copyAllFiles(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage,
                                 Collection<String> filesToCopy, Set<String> filesToOverwrite) {
         return filesToCopy.stream()
                 .map(

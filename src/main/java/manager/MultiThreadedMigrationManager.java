@@ -1,6 +1,6 @@
 package manager;
 
-import connector.FaultyStorageConnector;
+import connector.HttpStorageConnector;
 
 import java.util.Collection;
 import java.util.Set;
@@ -18,7 +18,7 @@ public class MultiThreadedMigrationManager extends MigrationManager {
     }
 
     @Override
-    public boolean proceedMigration(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage, boolean overwrite) {
+    public boolean proceedMigration(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage, boolean overwrite) {
         pool = Executors.newFixedThreadPool(N_THREADS);
         boolean result = super.proceedMigration(sourceStorage, targetStorage, overwrite);
         pool.shutdownNow();
@@ -26,12 +26,12 @@ public class MultiThreadedMigrationManager extends MigrationManager {
     }
 
     @Override
-    protected long deleteAllFiles(FaultyStorageConnector storage, Collection<String> files) {
+    protected long deleteAllFiles(HttpStorageConnector storage, Collection<String> files) {
         return doAndCount(files, fileName -> deleteFile(storage, fileName));
     }
 
     @Override
-    protected long copyAllFiles(FaultyStorageConnector sourceStorage, FaultyStorageConnector targetStorage,
+    protected long copyAllFiles(HttpStorageConnector sourceStorage, HttpStorageConnector targetStorage,
                                 Collection<String> filesToCopy, Set<String> filesToOverwrite) {
         return doAndCount(
                 filesToCopy,
